@@ -1,2 +1,8 @@
 ---
 # tasks file for bsw2.drupal_site
+- name: check drush status
+  raw: "{{DRUSHCMD}} -l http://localhost status --format=json"
+  register: rtn
+- name: drush site-install
+  raw: "{{DRUSHCMD}} -y -vv site-install standard --db-url=mysql://{{MYSQL_USER}}:{{MYSQL_PASSWORD}}@db/{{DBNAME}} --account-name={{DRUPAL_USER}} --account-pass={{DRUPAL_PASSWORD}} --account-mail={{DRUPAL_EMAIL}} --site-mail={{DRUPAL_EMAIL}} --site-name={{SITENAME}} --sites-subdir={{SITEDIR}}"
+  when: ( rtn.stdout | from_json)['db-hostname'] is not defined or ( rtn.stdout | from_json)['db-hostname'] != "db"

@@ -1,2 +1,12 @@
 ---
 # defaults file for bsw2.drupal_site
+SITENAME: mysite
+SITEDIR: default
+DBNAME: drupal_mysite
+MYSQL_USER: drupal
+MYSQL_PASSWORD: weakpassword
+DRUPAL_USER: dev
+DRUPAL_PASSWORD: weakpassword
+DRUPAL_EMAIL: dev@example.org
+DRUPAL_PROJECT: example
+DRUSHCMD: "docker run --rm -it --link {{DRUPAL_PROJECT}}_db:db --volumes-from {{DRUPAL_PROJECT}}_db --volumes-from {{DRUPAL_PROJECT}}_drupal drush/drush:7  -r /var/www/html"
