@@ -9,4 +9,4 @@ DRUPAL_USER: dev
 DRUPAL_PASSWORD: weakpassword
 DRUPAL_EMAIL: dev@example.org
 DRUPAL_PROJECT: example
-DRUSHCMD: "docker run --rm -it --link {{DRUPAL_PROJECT}}_db:db --volumes-from {{DRUPAL_PROJECT}}_db --volumes-from {{DRUPAL_PROJECT}}_drupal drush/drush:7  -r /var/www/html"
+DRUSHCMD: "docker run --rm -it --link {{DRUPAL_PROJECT}}_db:db --volumes-from {{DRUPAL_PROJECT}}_db --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites drush/drush:7  -r /var/www/html"

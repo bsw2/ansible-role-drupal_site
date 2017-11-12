@@ -1,5 +1,57 @@
 core: 7.x
 api: 2
+defaults:
+  projects:
+    subdir: "contrib"
 projects:
   drupal:
     version: 7.56
+
+# modules
+{% for item in drupal_modules %}
+  {{item.name}}:
+{% if item.download is not defined %}
+    version: {{item.version|default('~')}}
+{% endif %}
+{% if item.download is defined %}
+    download:
+      type: '{{ item.download.type }}'
+      url: '{{ item.download.url }}'
+{% if item.download.branch is defined %}
+      branch: '{{ item.download.branch }}'
+{% endif %}
+{% endif %}
+{% endfor %}
+
+# themes
+{% for item in drupal_themes %}
+  {{item.name}}:
+    type: theme
+{% if item.download is not defined %}
+    version: {{item.version|default('~')}}
+{% endif %}
+{% if item.download is defined %}
+    download:
+      type: '{{ item.download.type }}'
+      url: '{{ item.download.url }}'
+{% if item.download.branch is defined %}
+      branch: '{{ item.download.branch }}'
+{% endif %}
+{% endif %}
+{% endfor %}
+
+# libraries
+{% for item in drupal_libraries %}
+  {{item.name}}:
+{% if item.download is not defined %}
+    version: {{item.version|default('~')}}
+{% endif %}
+{% if item.download is defined %}
+    download:
+      type: '{{ item.download.type }}'
+      url: '{{ item.download.url }}'
+{% if item.download.branch is defined %}
+      branch: '{{ item.download.branch }}'
+{% endif %}
+{% endif %}
+{% endfor %}
