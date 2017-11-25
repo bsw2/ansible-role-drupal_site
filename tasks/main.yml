@@ -10,5 +10,7 @@
   template:
     src: drush.make.yml.j2
     dest: /var/lib/docker/volumes/{{DRUPAL_PROJECT}}_drupal_sites/_data/drush.make.yml
+  register: drush_makefile
 - name: drush make
   raw: "{{DRUSHCMD}} make -y --no-core --working-copy --contrib-destination=all /var/www/html/sites/drush.make.yml"
+  when: drush_makefile.changed
