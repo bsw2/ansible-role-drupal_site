@@ -1,0 +1,51 @@
+#!/bin/bash
+
+S3FOLDER=s3://woolstrum.net-backup/website
+S3FOLDER=s3://woolstrum.net-backup/website.new
+
+if [ -x /bin/bzip2 ]; then
+	BZIP=/bin/bzip2
+else
+	if [ -x /usr/bin/bzip2 ]; then
+		BZIP=/usr/bin/bzip2
+	fi
+fi
+
+if [ -x /usr/bin/php  ]; then
+	PHP=/usr/bin/php 
+else
+	if [ -x /usr/local/bin/php  ]; then
+		PHP=/usr/local/bin/php 
+	fi
+fi
+
+
+for SITE_SETTINGS in /var/www/{html,htdocs}/sites/*/settings.php ; do 
+	if [ -f ${SITE_SETTINGS} ]; then
+		SITEPATH=$(dirname ${SITE_SETTINGS});
+		SITENAME=$(basename ${SITEPATH});
+		BACKUPPATH=${SITEPATH}/backups
+		mkdir -p ${BACKUPPATH}
+		#if [ ! -s ${BACKUPPATH}/.htaccess ] ; then echo "Options +Indexes" >${BACKUPPATH}/.htaccess ; else if grep  -v   "Options.\+Indexes" ${BACKUPPATH}/.htaccess &>/dev/null ; then echo "Options +Indexes" >> ${BACKUPPATH}/.htaccess ; fi ; fi
+		
+		echo  "#   ${SITENAME}";
+	
+		(echo "<?php";echo "@include \"${SITE_SETTINGS}\";";echo 'print "/usr/bin/mysqldump -h db -Bca --add-drop-database -u ". $databases["default"]["default"]["username"]." --password=". $databases["default"]["default"]["password"]." ". $databases["default"]["default"]["database"];';echo "print \"|sed -E -e \\\"/^INSERT INTO \\\`(cache|watchdog|sessions|webform_submi)/d\\\"|${BZIP} >${BACKUPPATH}/\".\$databases[\"default\"][\"default\"][\"database\"].\".sql.bz2\n\";")| ${PHP} 
+		(echo "<?php";echo "@include \"${SITE_SETTINGS}\";";echo 'print "/usr/bin/mysqldump -h db -Bca --add-drop-database -u ". $databases["default"]["default"]["username"]." --password=". $databases["default"]["default"]["password"]." ". $databases["default"]["default"]["database"];';echo "print \"|sed -E -e \\\"/^INSERT INTO \\\`(cache|watchdog|sessions|webform_submi)/d\\\"|${BZIP} >${BACKUPPATH}/\".\$databases[\"default\"][\"default\"][\"database\"].\".sql.bz2\n\";")| ${PHP} |/bin/bash
+		(cd ${SITEPATH}/files ; tar -cf - . | ${BZIP}  > ${BACKUPPATH}/files.tar.bz2 )
+		(cd ${SITEPATH}; drush make-generate > ${BACKUPPATH}/drush.make 2>/dev/null)
+		(aws --profile backup s3 sync --exclude "files.tar.bz2" ${SITEPATH}/backups/ ${S3FOLDER}/${SITENAME}/ 1>&2)
+		(aws --profile backup s3 sync ${SITEPATH}/files/ ${S3FOLDER}/${SITENAME}/files 1>&2)
+		if [ ! -f ${BACKUPPATH}/.htaccess ]; then
+			echo 'Options +Indexes' > ${BACKUPPATH}/.htaccess
+			echo '' >> ${BACKUPPATH}/.htaccess
+			echo '<FilesMatch "\.(make|.*sql)$">' >> ${BACKUPPATH}/.htaccess
+			echo 'Order deny,allow' >> ${BACKUPPATH}/.htaccess
+			echo '</FilesMatch>' >> ${BACKUPPATH}/.htaccess
+		fi
+		
+		echo 
+	fi
+
+done
+
