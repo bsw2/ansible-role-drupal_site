@@ -1,7 +1,12 @@
 ---
 # tasks file for bsw2.drupal_site
-- name: check drush status
-  raw: "{{DRUSHCMD}} -l http://localhost status --format=json"
+- name: "run drush status to make sure we have drush downloaded (otherwise it confuses the json stdout"
+  raw: "{{DRUSHCMD_NOSTDERR}} -l http://localhost status --format=json"
+  changed_when: false
+
+- name: get database connection info from drush status to see if we need to run site-install
+  raw: "{{DRUSHCMD_NOSTDERR}} -l http://localhost status --format=json"
+  changed_when: false
   register: rtn
 - name: drush site-install
   raw: "{{DRUSHCMD}} -y -vv site-install standard --db-url=mysql://{{MYSQL_USER}}:{{MYSQL_PASSWORD}}@db/{{DBNAME}} --account-name={{DRUPAL_USER}} --account-pass={{DRUPAL_PASSWORD}} --account-mail={{DRUPAL_EMAIL}} --site-mail={{DRUPAL_EMAIL}} --site-name={{SITENAME}} --sites-subdir={{SITEDIR}}"
@@ -11,6 +16,18 @@
     src: drush.make.yml.j2
     dest: /var/lib/docker/volumes/{{DRUPAL_PROJECT}}_drupal_sites/_data/drush.make.yml
   register: drush_makefile
+
+- name: check drush status to see if we want to force drush make
+  raw: "{{DRUSHCMD_NOSTDOUT}} -l http://localhost status --format=json"
+  changed_when: false
+  register: drush_status
+
 - name: drush make
   raw: "{{DRUSHCMD}} make -y --no-core --working-copy --contrib-destination=all /var/www/html/sites/drush.make.yml"
-  when: drush_makefile.changed
+  when: drush_makefile.changed or drush_status.stdout != ""
+
+- name: final check of drush status
+  raw: "{{DRUSHCMD_NOSTDOUT}} -l http://localhost status --format=json"
+  changed_when: false
+  register: rtn
+  failed_when: rtn.stdout != ""
