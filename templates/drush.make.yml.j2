@@ -33,6 +33,9 @@ projects:
 {% if item.download is not defined %}
     version: {{item.version|default('~')}}
 {% endif %}
+{% if item.subdir is defined %}
+    subdir: {{item.subdir}}
+{% endif %}
 {% if item.download is defined %}
     download:
       type: '{{ item.download.type }}'
