@@ -3,6 +3,18 @@
   changed_when: false
   register: drush_status
 
-- name: drush site-install
+- name: drush standard site-install
   raw: "{{DRUSHCMD}} -y -vv site-install standard --db-url=mysql://{{MYSQL_USER}}:{{MYSQL_PASSWORD}}@db/{{DBNAME}} --account-name={{DRUPAL_USER}} --account-pass={{DRUPAL_PASSWORD}} --account-mail={{DRUPAL_EMAIL}} --site-mail={{DRUPAL_EMAIL}} --site-name={{SITENAME}} --sites-subdir={{SITEDIR}}"
-  when: ( drush_status.stdout | from_json)['db-hostname'] is not defined or ( drush_status.stdout | from_json)['db-hostname'] != "db"
+  when: USE_STD_SITE_INSTALL and (( drush_status.stdout | from_json)['db-hostname'] is not defined or ( drush_status.stdout | from_json)['db-hostname'] != "db")
+
+- name: copy fresh settings file
+  raw: docker run --rm --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites/{{SITEDIR}} drupal:7 /bin/bash -c "cp -avf default.settings.php settings.php"
+  when: not USE_STD_SITE_INSTALL and (( drush_status.stdout | from_json)['db-hostname'] is not defined or ( drush_status.stdout | from_json)['db-hostname'] != "db")
+
+- name: settings file database
+  raw: docker run --rm --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites/{{SITEDIR}} drupal:7 /bin/bash -c "sed \"s/\$databases = array();/\$databases = array (\n  'default' => \n  array (\n    'default' => \n    array (\n      'database' => '{{DBNAME}}',\n      'username' => '{{MYSQL_USER}}',\n      'password' => '{{MYSQL_PASSWORD}}',\n      'host' => 'db',\n      'port' => '',\n      'driver' => 'mysql',\n      'prefix' => '',\n    ),\n  ),'{{POSTGRES_DB}}' =>array ('default' =>array ('database' => '{{POSTGRES_DB}}','username' => '{{POSTGRES_USER}}',  'password' =>'{{POSTGRES_PASSWORD}}','host' =>'postgres','port' => '','driver' => 'pgsql','prefix' => '',),),\n);/g\" -i settings.php"
+  when: not USE_STD_SITE_INSTALL and (( drush_status.stdout | from_json)['db-hostname'] is not defined or ( drush_status.stdout | from_json)['db-hostname'] != "db")
+
+- name: settings file salt
+  raw: docker run --rm --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites/{{SITEDIR}} drupal:7 /bin/bash -c "sed \"s/\$drupal_hash_salt = '';/\$drupal_hash_salt = 'dUQlfVuVshiK9BnsgvnwOzrb45S0DQvAvapawAppDAk';/g\" -i settings.php"
+  when: not USE_STD_SITE_INSTALL and (( drush_status.stdout | from_json)['db-hostname'] is not defined or ( drush_status.stdout | from_json)['db-hostname'] != "db")
