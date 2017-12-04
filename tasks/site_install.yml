@@ -1,0 +1,8 @@
+- name: get database connection info from drush status to see if we need to run site-install
+  raw: "{{DRUSHCMD_NOSTDERR}} -l http://localhost status --format=json"
+  changed_when: false
+  register: drush_status
+
+- name: drush site-install
+  raw: "{{DRUSHCMD}} -y -vv site-install standard --db-url=mysql://{{MYSQL_USER}}:{{MYSQL_PASSWORD}}@db/{{DBNAME}} --account-name={{DRUPAL_USER}} --account-pass={{DRUPAL_PASSWORD}} --account-mail={{DRUPAL_EMAIL}} --site-mail={{DRUPAL_EMAIL}} --site-name={{SITENAME}} --sites-subdir={{SITEDIR}}"
+  when: ( drush_status.stdout | from_json)['db-hostname'] is not defined or ( drush_status.stdout | from_json)['db-hostname'] != "db"
