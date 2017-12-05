@@ -1,0 +1,13 @@
+- name: restore from backup
+  raw: docker run --name s3_sync_backup_dl --rm --volume ~/.aws:/root/.aws --volumes-from {{DRUPAL_PROJECT}}_drupal cgswong/aws:aws  s3 sync {{DRUPAL_S3_BACKUP_BUCKET}} /var/www/html/sites/{{SITEDIR}}/backups/
+  ignore_errors: yes
+  when: LOAD_FROM_BACKUP
+- name: reload files from backup
+  raw: docker run --rm --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites/{{SITEDIR}} drupal:7 /bin/bash -c "tar -C files -xf backups/files.tar.bz2"
+  when: LOAD_FROM_BACKUP
+- name: reload database from backup
+  raw: docker run --rm -i  --link  {{DRUPAL_PROJECT}}_db:db --volumes-from {{DRUPAL_PROJECT}}_drupal mariadb:5.5 /bin/bash -c "gzip -dc /var/www/html/sites/{{SITEDIR}}/backups/{{DBNAME}}.sql.gz |sed 's/drupal-{{DRUPAL_PROJECT}}/{{DBNAME}}/g' | mysql -h db -u drupal -p{{MYSQL_PASSWORD}} {{DBNAME}}"
+  when: LOAD_FROM_BACKUP
+- name: reload finance database from backup
+  raw: docker run --rm --link {{DRUPAL_PROJECT}}_postgres:postgres --volumes-from {{DRUPAL_PROJECT}}_drupal postgres:8 /bin/bash -c "gzip -dc /var/www/html/sites/{{SITEDIR}}/backups/finance.sql.gz | PGPASSWORD=fixpassword psql -h postgres -U bsw2 finance"
+  when: LOAD_FROM_BACKUP

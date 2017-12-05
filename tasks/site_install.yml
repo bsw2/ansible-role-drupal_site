@@ -7,6 +7,10 @@
   raw: "{{DRUSHCMD}} -y -vv site-install standard --db-url=mysql://{{MYSQL_USER}}:{{MYSQL_PASSWORD}}@db/{{DBNAME}} --account-name={{DRUPAL_USER}} --account-pass={{DRUPAL_PASSWORD}} --account-mail={{DRUPAL_EMAIL}} --site-mail={{DRUPAL_EMAIL}} --site-name={{SITENAME}} --sites-subdir={{SITEDIR}}"
   when: USE_STD_SITE_INSTALL and (( drush_status.stdout | from_json)['db-hostname'] is not defined or ( drush_status.stdout | from_json)['db-hostname'] != "db")
 
+- name: make sure we have files directory
+  raw: docker run --rm --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites/{{SITEDIR}} drupal:7 /bin/bash -c "mkdir files;chown www-data:www-data files"
+  when: not USE_STD_SITE_INSTALL
+
 - name: copy fresh settings file
   raw: docker run --rm --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites/{{SITEDIR}} drupal:7 /bin/bash -c "cp -avf default.settings.php settings.php"
   when: not USE_STD_SITE_INSTALL and (( drush_status.stdout | from_json)['db-hostname'] is not defined or ( drush_status.stdout | from_json)['db-hostname'] != "db")

@@ -1,2 +1,3 @@
 ---
 # vars file for bsw2.drupal_site
+LOAD_FROM_BACKUP: false

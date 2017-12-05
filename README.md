@@ -14,6 +14,12 @@ Role Variables
 
 A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
 
+USE_STD_SITE_INSTALL: true
+  If you need a secondary external database currently postgres only set this to false
+
+LOAD_FROM_BACKUP: false
+  use with -e LOAD_FROM_BACKUP=true on the command line to restore from database backups
+
 Dependencies
 ------------
 
