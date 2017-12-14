@@ -8,6 +8,7 @@ projects:
     version: 7.56
 
 # modules
+{% if drupal_modules is defined %}
 {% for item in drupal_modules %}
   {{item.name}}:
 {% if item.download is not defined %}
@@ -25,8 +26,10 @@ projects:
 {% endif %}
 {% endif %}
 {% endfor %}
+{% endif %}
 
 # themes
+{% if drupal_themes is defined %}
 {% for item in drupal_themes %}
   {{item.name}}:
     type: theme
@@ -45,8 +48,10 @@ projects:
 {% endif %}
 {% endif %}
 {% endfor %}
+{% endif %}
 
 # libraries
+{% if drupal_libraries is defined %}
 {% for item in drupal_libraries %}
   {{item.name}}:
 {% if item.download is not defined %}
@@ -61,3 +66,4 @@ projects:
 {% endif %}
 {% endif %}
 {% endfor %}
+{% endif %}
