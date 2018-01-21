@@ -8,6 +8,17 @@
 - include_tasks: drush_make.yml
 - include_tasks: restore_from_backup.yml
 
+- name: make sure we have backup file
+  template:
+    dest: /etc/cron.daily/docker_drupal_backup
+    src: backup.j2
+    mode: a+x
+- name: needed packages
+  apt:
+    name: "{{item}}"
+  with_items:
+    - jq
+
 - name: final check of drush status
   raw: "{{DRUSHCMD_NOSTDOUT}} -l http://localhost status --format=json"
   changed_when: false

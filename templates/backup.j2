@@ -1,0 +1,41 @@
+#!/bin/bash
+
+S3FOLDER="{{DRUPAL_S3_BACKUP_BUCKET}}"
+
+export DRUPALPROJ="{{DRUPAL_PROJECT}}"
+
+DRUPAL_BACKUP_FOLDER=/var/www/html/sites/default/backups/
+
+DOCKER_VOLUMES="--volumes-from ${DRUPALPROJ}_db --volumes-from ${DRUPALPROJ}_drupal --volume ${DRUPALPROJ}_drupal_html:/var/www/html"
+
+get_docker_drupal_site_settings()
+{
+docker run --name backup_list --rm  --link ${DRUPALPROJ}_db:db ${DOCKER_VOLUMES} -w /var/www/html/sites drush/drush:7 status  --format=json --show-passwords uri db-hostname db-username db-password db-name root site files
+}
+
+convert_site_settings2tsv()
+{
+jq  '. | [ .["db-hostname"], .["db-username"], .["db-password"], .["db-name"], .["root"], .["site"] ] | @tsv '
+}
+
+make_docker_mysqldump_command()
+{
+sed 's,"\(.*\)\\t\(.*\)\\t\(.*\)\\t\(.*\)\\t\(.*\)\\t\(.*\)",docker run --rm --link ${DRUPALPROJ}_db:db --volumes-from ${DRUPALPROJ}_drupal mariadb:5.5 /bin/bash -c "/usr/bin/mysqldump -Bca --add-drop-database -h \1 -u \2 -p\3 \4 | gzip >\5/\6/backups/\4.sql.gz" ,g'
+}
+
+make_finance_settings_php_script()
+{
+(echo "<?php";echo "@include \"/var/www/html/sites/default/settings.php\";";echo -n 'print "PGPASSWORD=". $databases["finance"]["default"]["password"]." pg_dump -n public --column-inserts -cO -h ". $databases["finance"]["default"]["host"]." -U ". $databases["finance"]["default"]["username"]." ". $databases["finance"]["default"]["database"] ." | gzip > ';echo -n "${DRUPAL_BACKUP_FOLDER}";echo -n '". $databases["finance"]["default"]["database"] .".sql.gz";';echo "print \"\n\";")
+}
+
+make_postgres_dump_command()
+{
+make_finance_settings_php_script | docker run --name backup_settings --rm -i --link ${DRUPALPROJ}_db:db --volumes-from ${DRUPALPROJ}_db --volumes-from ${DRUPALPROJ}_drupal --volume ${DRUPALPROJ}_drupal_html:/var/www/html drupal:7 /usr/local/bin/php
+}
+
+get_docker_drupal_site_settings | convert_site_settings2tsv | make_docker_mysqldump_command |sh
+
+make_postgres_dump_command |docker run --rm -i --link ${DRUPALPROJ}_postgres:postgres --volumes-from ${DRUPALPROJ}_drupal postgres:8 /bin/bash
+
+
+docker run --name backup_s3 --rm --volume ~bsw2/.aws:/root/.aws --volumes-from ${DRUPALPROJ}_drupal -a stderr cgswong/aws:aws s3 sync ${DRUPAL_BACKUP_FOLDER} ${S3FOLDER}
