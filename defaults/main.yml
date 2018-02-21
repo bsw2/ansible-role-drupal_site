@@ -9,9 +9,10 @@ DRUPAL_USER: dev
 DRUPAL_PASSWORD: weakpassword
 DRUPAL_EMAIL: dev@example.org
 DRUPAL_PROJECT: example
-DRUSHCMD: "docker run --rm -it -e GIT_SSL_NO_VERIFY=true --link {{DRUPAL_PROJECT}}_db:db --volumes-from {{DRUPAL_PROJECT}}_db --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites drush/drush:7  -r /var/www/html"
-DRUSHCMD_NOSTDERR: "docker run --rm -e GIT_SSL_NO_VERIFY=true --link {{DRUPAL_PROJECT}}_db:db --volumes-from {{DRUPAL_PROJECT}}_db --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites -a stdout drush/drush:7  -r /var/www/html"
-DRUSHCMD_NOSTDOUT: "docker run --rm -e GIT_SSL_NO_VERIFY=true --link {{DRUPAL_PROJECT}}_db:db --volumes-from {{DRUPAL_PROJECT}}_db --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites -a stderr drush/drush:7  -r /var/www/html"
+DRUPAL_MYSQL_CONTAINER: "{{DRUPAL_PROJECT}}_db"
+DRUSHCMD: "docker run --rm -it -e GIT_SSL_NO_VERIFY=true --link {{DRUPAL_MYSQL_CONTAINER}}:db --volumes-from {{DRUPAL_MYSQL_CONTAINER}} --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites drush/drush:7  -r /var/www/html"
+DRUSHCMD_NOSTDERR: "docker run --rm -e GIT_SSL_NO_VERIFY=true --link {{DRUPAL_MYSQL_CONTAINER}}:db --volumes-from {{DRUPAL_MYSQL_CONTAINER}} --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites -a stdout drush/drush:7  -r /var/www/html"
+DRUSHCMD_NOSTDOUT: "docker run --rm -e GIT_SSL_NO_VERIFY=true --link {{DRUPAL_MYSQL_CONTAINER}}:db --volumes-from {{DRUPAL_MYSQL_CONTAINER}} --volumes-from {{DRUPAL_PROJECT}}_drupal -w /var/www/html/sites -a stderr drush/drush:7  -r /var/www/html"
 USE_STD_SITE_INSTALL: true
 POSTGRES_USER: postgres
 POSTGRES_PASSWORD: weakpassword

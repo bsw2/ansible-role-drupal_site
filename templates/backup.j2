@@ -3,14 +3,15 @@
 S3FOLDER="{{DRUPAL_S3_BACKUP_BUCKET}}"
 
 export DRUPALPROJ="{{DRUPAL_PROJECT}}"
+export DRUPAL_MYSQL_CONTAINER="{{DRUPAL_MYSQL_CONTAINER}}"
 
 DRUPAL_BACKUP_FOLDER=/var/www/html/sites/default/backups/
 
-DOCKER_VOLUMES="--volumes-from ${DRUPALPROJ}_db --volumes-from ${DRUPALPROJ}_drupal --volume ${DRUPALPROJ}_drupal_html:/var/www/html"
+DOCKER_VOLUMES="--volumes-from ${DRUPAL_MYSQL_CONTAINER} --volumes-from ${DRUPALPROJ}_drupal --volume ${DRUPALPROJ}_drupal_html:/var/www/html"
 
 get_docker_drupal_site_settings()
 {
-docker run --name backup_list --rm  --link ${DRUPALPROJ}_db:db ${DOCKER_VOLUMES} -w /var/www/html/sites drush/drush:7 status  --format=json --show-passwords uri db-hostname db-username db-password db-name root site files
+docker run --name backup_list --rm  --link ${DRUPAL_MYSQL_CONTAINER}:db ${DOCKER_VOLUMES} -w /var/www/html/sites drush/drush:7 status  --format=json --show-passwords uri db-hostname db-username db-password db-name root site files
 }
 
 convert_site_settings2tsv()
@@ -20,7 +21,7 @@ jq  '. | [ .["db-hostname"], .["db-username"], .["db-password"], .["db-name"], .
 
 make_docker_mysqldump_command()
 {
-sed 's,"\(.*\)\\t\(.*\)\\t\(.*\)\\t\(.*\)\\t\(.*\)\\t\(.*\)",docker run --rm --link ${DRUPALPROJ}_db:db --volumes-from ${DRUPALPROJ}_drupal mariadb:5.5 /bin/bash -c "/usr/bin/mysqldump -Bca --add-drop-database -h \1 -u \2 -p\3 \4 | gzip >\5/\6/backups/\4.sql.gz" ,g'
+sed 's,"\(.*\)\\t\(.*\)\\t\(.*\)\\t\(.*\)\\t\(.*\)\\t\(.*\)",docker run --rm --link ${DRUPAL_MYSQL_CONTAINER}:db --volumes-from ${DRUPALPROJ}_drupal mariadb:5.5 /bin/bash -c "/usr/bin/mysqldump -Bca --add-drop-database -h \1 -u \2 -p\3 \4 | gzip >\5/\6/backups/\4.sql.gz" ,g'
 }
 
 make_finance_settings_php_script()
@@ -30,7 +31,7 @@ make_finance_settings_php_script()
 
 make_postgres_dump_command()
 {
-make_finance_settings_php_script | docker run --name backup_settings --rm -i --link ${DRUPALPROJ}_db:db --volumes-from ${DRUPALPROJ}_db --volumes-from ${DRUPALPROJ}_drupal --volume ${DRUPALPROJ}_drupal_html:/var/www/html drupal:7 /usr/local/bin/php
+make_finance_settings_php_script | docker run --name backup_settings --rm -i --link ${DRUPAL_MYSQL_CONTAINER}:db --volumes-from ${DRUPAL_MYSQL_CONTAINER} --volumes-from ${DRUPALPROJ}_drupal --volume ${DRUPALPROJ}_drupal_html:/var/www/html drupal:7 /usr/local/bin/php
 }
 
 get_docker_drupal_site_settings | convert_site_settings2tsv | make_docker_mysqldump_command |sh
