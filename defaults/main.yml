@@ -17,3 +17,4 @@ POSTGRES_USER: postgres
 POSTGRES_PASSWORD: weakpassword
 POSTGRES_DB: postgres
 DRUPAL_S3_BACKUP_BUCKET: "s3://mybucket/backups/mysite/"
+drupal_modules_subdir: contrib

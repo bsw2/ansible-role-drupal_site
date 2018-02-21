@@ -2,7 +2,9 @@ core: 7.x
 api: 2
 defaults:
   projects:
-    subdir: "contrib"
+{% if drupal_modules_subdir is defined and drupal_modules_subdir != "" %}
+    subdir: "{{drupal_modules_subdir}}"
+{% endif %}
 projects:
   drupal:
     version: 7.56
